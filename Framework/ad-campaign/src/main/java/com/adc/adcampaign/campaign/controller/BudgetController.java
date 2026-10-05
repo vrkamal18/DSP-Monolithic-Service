@@ -1,37 +1,40 @@
 package com.adc.adcampaign.campaign.controller;
 
-import com.adc.adcampaign.campaign.entity.Budget;
+import com.adc.adcampaign.campaign.dto.BudgetRequest;
+import com.adc.adcampaign.campaign.dto.BudgetResponse;
 import com.adc.adcampaign.campaign.service.BudgetService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-
 @RestController
-@RequestMapping("/api/budgets")
+@RequestMapping("/api/v1/budgets")
 public class BudgetController {
 
-    @Autowired
-    private BudgetService budgetService;
+    private final BudgetService budgetService;
 
+    public BudgetController(BudgetService budgetService) {
+        this.budgetService = budgetService;
+    }
+
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'CAMPAIGN_MANAGER', 'FINANCE_USER')")
     @PostMapping
-    public ResponseEntity<Budget> createOrUpdate(@RequestBody Budget budget) {
-        return ResponseEntity.ok(budgetService.createOrUpdateBudget(budget));
+    public ResponseEntity<BudgetResponse> createOrUpdate(@Valid @RequestBody BudgetRequest request) {
+        return ResponseEntity.ok(BudgetResponse.from(budgetService.createOrUpdateBudget(request)));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Budget> getById(@PathVariable Long id) {
-        Optional<Budget> budget = budgetService.getBudgetById(id);
-        return budget.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<BudgetResponse> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(BudgetResponse.from(budgetService.getBudgetById(id)));
     }
 
     @GetMapping("/campaign/{campaignId}")
-    public ResponseEntity<Budget> getByCampaign(@PathVariable Long campaignId) {
-        Optional<Budget> budget = budgetService.getBudgetByCampaignId(campaignId);
-        return budget.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<BudgetResponse> getByCampaign(@PathVariable Long campaignId) {
+        return ResponseEntity.ok(BudgetResponse.from(budgetService.getBudgetByCampaignId(campaignId)));
     }
 
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'FINANCE_USER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         budgetService.deleteBudget(id);

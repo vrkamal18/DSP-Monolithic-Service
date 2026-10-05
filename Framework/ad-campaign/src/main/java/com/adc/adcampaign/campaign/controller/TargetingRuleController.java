@@ -1,48 +1,58 @@
 package com.adc.adcampaign.campaign.controller;
 
-import com.adc.adcampaign.campaign.entity.TargetingRule;
+import com.adc.adcampaign.campaign.dto.TargetingRuleRequest;
+import com.adc.adcampaign.campaign.dto.TargetingRuleResponse;
 import com.adc.adcampaign.campaign.service.TargetingRuleService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/targeting-rules")
+@RequestMapping("/api/v1/targeting-rules")
 public class TargetingRuleController {
 
-    @Autowired
-    private TargetingRuleService targetingRuleService;
+    private final TargetingRuleService targetingRuleService;
 
+    public TargetingRuleController(TargetingRuleService targetingRuleService) {
+        this.targetingRuleService = targetingRuleService;
+    }
+
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'CAMPAIGN_MANAGER')")
     @PostMapping
-    public ResponseEntity<TargetingRule> createRule(@RequestBody TargetingRule rule) {
-        return ResponseEntity.ok(targetingRuleService.createTargetingRule(rule));
+    public ResponseEntity<TargetingRuleResponse> createRule(@Valid @RequestBody TargetingRuleRequest request) {
+        return ResponseEntity.ok(TargetingRuleResponse.from(targetingRuleService.createTargetingRule(request)));
     }
 
     @GetMapping
-    public ResponseEntity<List<TargetingRule>> getAllRules() {
-        return ResponseEntity.ok(targetingRuleService.getAllTargetingRules());
+    public ResponseEntity<List<TargetingRuleResponse>> getAllRules() {
+        return ResponseEntity.ok(targetingRuleService.getAllTargetingRules().stream()
+                .map(TargetingRuleResponse::from)
+                .toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TargetingRule> getRuleById(@PathVariable Long id) {
-        return targetingRuleService.getTargetingRuleById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<TargetingRuleResponse> getRuleById(@PathVariable Long id) {
+        return ResponseEntity.ok(TargetingRuleResponse.from(targetingRuleService.getTargetingRuleById(id)));
     }
 
     @GetMapping("/campaign/{campaignId}")
-    public ResponseEntity<List<TargetingRule>> getRulesByCampaign(@PathVariable Long campaignId) {
-        return ResponseEntity.ok(targetingRuleService.getRulesByCampaign(campaignId));
+    public ResponseEntity<List<TargetingRuleResponse>> getRulesByCampaign(@PathVariable Long campaignId) {
+        return ResponseEntity.ok(targetingRuleService.getRulesByCampaign(campaignId).stream()
+                .map(TargetingRuleResponse::from)
+                .toList());
     }
 
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'CAMPAIGN_MANAGER')")
     @PutMapping("/{id}")
-    public ResponseEntity<TargetingRule> updateRule(@PathVariable Long id, @RequestBody TargetingRule rule) {
-        rule.setId(id);
-        return ResponseEntity.ok(targetingRuleService.updateTargetingRule(rule));
+    public ResponseEntity<TargetingRuleResponse> updateRule(@PathVariable Long id,
+                                                             @Valid @RequestBody TargetingRuleRequest request) {
+        return ResponseEntity.ok(TargetingRuleResponse.from(targetingRuleService.updateTargetingRule(id, request)));
     }
 
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'CAMPAIGN_MANAGER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRule(@PathVariable Long id) {
         targetingRuleService.deleteTargetingRule(id);

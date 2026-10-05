@@ -1,5 +1,6 @@
 package com.adc.adcampaign.campaign.entity;
 
+import com.adc.adcampaign.identity.entity.Tenant;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,6 +18,10 @@ public class Creative {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "tenant_id", nullable = false)
+    private Tenant tenant;
+
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -31,7 +36,19 @@ public class Creative {
     private Integer width;
     private Integer height;
 
-    private String status; // e.g., "ACTIVE", "INACTIVE"
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private CreativeStatus status = CreativeStatus.DRAFT;
+
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
+
+    @Column(name = "reviewed_by_user_id")
+    private Long reviewedByUserId;
+
+    @Column(name = "reviewed_at")
+    private LocalDateTime reviewedAt;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
